@@ -10,9 +10,18 @@ let html = ""
 data.forEach(item => {
 
 html += `
-<div>
-${item.note} - ${item.amount}
-<button onclick="deleteItem('${item.id}')">ลบ</button>
+<div class="item">
+
+<b>${item.note}</b><br>
+
+${item.category} - ${item.amount}
+
+<br><br>
+
+<button onclick="deleteItem('${item.id}')">
+ลบ
+</button>
+
 </div>
 `
 
@@ -22,16 +31,23 @@ document.getElementById("list").innerHTML = html
 
 }
 
-loadData()
+
 async function addItem(){
 
 let data = {
+
 id: Date.now(),
+
 type: document.getElementById("type").value,
+
 category: document.getElementById("category").value,
+
 amount: document.getElementById("amount").value,
+
 note: document.getElementById("note").value,
-user: "prem"
+
+user: "user1"
+
 }
 
 await fetch(API,{
@@ -42,6 +58,8 @@ body:JSON.stringify(data)
 loadData()
 
 }
+
+
 async function deleteItem(id){
 
 await fetch(API + "?id=" + id,{
@@ -51,4 +69,6 @@ method:"DELETE"
 loadData()
 
 }
-<button onclick="addItem()">เพิ่มรายการ</button>
+
+
+loadData()
