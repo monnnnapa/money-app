@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwqqhi9c47fwoqlZ6sABBMBzPntzPV1ANP6RfMClCdKIG3ixx04mXNBfo6ST7ufImCtTQ/exec"
+const API_URL = "https://script.google.com/macros/library/d/12pqurz0OyXkdBywdJjASVT3NqlFAm6XelnR4L8e0ctdWGFc5yjdCO-63/5"
 
 let chart
 
