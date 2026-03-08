@@ -90,6 +90,8 @@ display:none;
 
 <input id="amount" placeholder="จำนวนเงิน">
 
+<input id="note" placeholder="รายละเอียด">
+
 <button onclick="save()">บันทึก</button>
 
 </div>
@@ -143,9 +145,15 @@ const category=document.getElementById("category")
 if(type==="expense"){
 
 category.innerHTML=`
-<option value="food">กิน</option>
+
+<option value="house">บ้าน</option>
+<option value="car">รถ</option>
+<option value="child">ลูก</option>
 <option value="travel">เที่ยว</option>
+<option value="food">กิน</option>
 <option value="fuel">น้ำมัน</option>
+<option value="other">อื่นๆ</option>
+
 `
 
 }
@@ -153,9 +161,9 @@ category.innerHTML=`
 if(type==="income"){
 
 category.innerHTML=`
-<option value="house">บ้าน</option>
-<option value="car">รถ</option>
-<option value="trip">เที่ยว</option>
+
+<option value="salary">เงินเดือน</option>
+
 `
 
 }
@@ -175,10 +183,10 @@ let expense=0
 let food=0
 let travel=0
 let fuel=0
-
 let house=0
 let car=0
-let trip=0
+let child=0
+let other=0
 
 let historyHTML=""
 
@@ -190,10 +198,6 @@ if(t.type==="income"){
 
 income+=amount
 
-if(t.category==="house") house+=amount
-if(t.category==="car") car+=amount
-if(t.category==="trip") trip+=amount
-
 }
 
 if(t.type==="expense"){
@@ -203,12 +207,16 @@ expense+=amount
 if(t.category==="food") food+=amount
 if(t.category==="travel") travel+=amount
 if(t.category==="fuel") fuel+=amount
+if(t.category==="house") house+=amount
+if(t.category==="car") car+=amount
+if(t.category==="child") child+=amount
+if(t.category==="other") other+=amount
 
 }
 
 historyHTML+=`
 <div>
-${t.date} | ${t.category} | ${amount}
+${t.date} | ${t.category} | ${amount} | ${t.note || ""}
 </div>
 `
 
@@ -218,7 +226,7 @@ document.getElementById("balance").innerText=income-expense
 document.getElementById("history").innerHTML=historyHTML
 
 drawExpenseChart(food,travel,fuel)
-drawSavingChart(house,car,trip)
+drawSavingChart(house,car,child)
 
 loadGoals()
 
@@ -248,7 +256,7 @@ backgroundColor:[
 
 }
 
-function drawSavingChart(house,car,trip){
+function drawSavingChart(house,car,child){
 
 if(savingChart) savingChart.destroy()
 
@@ -257,9 +265,9 @@ document.getElementById("savingChart"),
 {
 type:"pie",
 data:{
-labels:["บ้าน","รถ","เที่ยว"],
+labels:["บ้าน","รถ","ลูก"],
 datasets:[{
-data:[house,car,trip],
+data:[house,car,child],
 backgroundColor:[
 "#69db7c",
 "#845ef7",
@@ -321,6 +329,7 @@ async function save(){
 const type=document.getElementById("type").value
 const category=document.getElementById("category").value
 const amount=document.getElementById("amount").value
+const note=document.getElementById("note").value
 
 await fetch(API,{
 method:"POST",
@@ -328,6 +337,7 @@ body:JSON.stringify({
 type:type,
 category:category,
 amount:amount,
+note:note,
 date:new Date().toLocaleDateString()
 })
 })
