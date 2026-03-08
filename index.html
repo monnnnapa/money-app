@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
 
 <meta charset="UTF-8">
@@ -13,6 +14,7 @@
 
 </head>
 
+
 <body>
 
 <div class="container">
@@ -23,49 +25,63 @@
 ฿ <span id="totalMoney">0</span>
 </div>
 
+
 <div class="card">
 
 <canvas id="pieChart"></canvas>
 
-<div id="categoryList"></div>
-
 </div>
 
-<h3>เป้าหมายร่วมกัน</h3>
-
-<div id="goalList"></div>
 
 <h3>การใช้เงินกองกลาง</h3>
 
 <div id="transactionList"></div>
 
-<button class="addBtn" onclick="addTransaction()">
-+ เพิ่มรายการ
-</button>
+
+<h3>เพิ่มรายการ</h3>
+
 <div class="formBox">
 
 <select id="type">
+
 <option value="expense">รายจ่าย</option>
 <option value="income">รายรับ</option>
+
 </select>
+
 
 <select id="category">
-<option>ค่ากิน</option>
-<option>ค่าน้ำมัน</option>
-<option>ค่าเที่ยว</option>
-<option>เงินเก็บ</option>
+
+<option value="ค่ากิน">ค่ากิน</option>
+<option value="ค่าน้ำมัน">ค่าน้ำมัน</option>
+<option value="ค่าเที่ยว">ค่าเที่ยว</option>
+<option value="เงินเก็บ">เงินเก็บ</option>
+<option value="เงินเดือน">เงินเดือน</option>
+
 </select>
 
-<input id="amount" type="number" placeholder="จำนวนเงิน">
+
+<input
+id="amount"
+type="number"
+placeholder="จำนวนเงิน"
+/>
+
 
 <button onclick="saveTransaction()">
+
 บันทึก
+
 </button>
 
 </div>
+
+
 </div>
+
 
 <script src="app.js"></script>
 
 </body>
+
 </html>
