@@ -383,8 +383,8 @@ const categories=[
 "บ้าน","รถ","ลูก","กิน","เที่ยว","น้ำมัน","อื่นๆ"
 ]
 
-let saved=[]
-let target=[]
+let percent=[]
+let labelsFull=[]
 
 categories.forEach(cat=>{
 
@@ -392,13 +392,26 @@ const found=data.find(g=>g.name===cat)
 
 if(found){
 
-saved.push(Number(found.saved))
-target.push(Number(found.target))
+const saved=Number(found.saved)
+const target=Number(found.target)
+
+const p = target>0 ? (saved/target)*100 : 0
+
+percent.push(p)
+
+labelsFull.push(
+cat+" ("+
+saved.toLocaleString()+
+" / "+
+target.toLocaleString()+
+")"
+)
 
 }else{
 
-saved.push(0)
-target.push(0)
+percent.push(0)
+
+labelsFull.push(cat+" (0 / 0)")
 
 }
 
@@ -411,22 +424,32 @@ document.getElementById("goalChart"),
 {
 type:"bar",
 data:{
-labels:categories,
+labels:labelsFull,
 datasets:[
 {
-label:"เป้าหมาย",
-data:target,
-backgroundColor:"#e0e0e0"
-},
-{
-label:"เงินเก็บ",
-data:saved,
+label:"ความคืบหน้า %",
+data:percent,
 backgroundColor:"#2c7be5"
 }
 ]
 },
 options:{
-indexAxis:'y'
+indexAxis:'y',
+plugins:{
+tooltip:{
+callbacks:{
+label:(ctx)=>ctx.raw.toFixed(1)+" %"
+}
+}
+},
+scales:{
+x:{
+max:100,
+ticks:{
+callback:(v)=>v+"%"
+}
+}
+}
 }
 }
 )
