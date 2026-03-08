@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Money App</title>
+
+<style>
+body{
+font-family:sans-serif;
+padding:20px;
+background:#f4f6fb;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:20px;
+}
+
+button{
+padding:10px 20px;
+background:#4c7cff;
+color:white;
+border:none;
+border-radius:6px;
+}
+
+input,select{
+padding:8px;
+margin:5px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>เงินกองกลาง</h2>
+
+<div class="card">
+<h1 id="balance">0 บาท</h1>
+</div>
+
+<div class="card">
+
+<input id="amount" type="number" placeholder="จำนวนเงิน">
+
+<select id="type">
+<option value="income">รายรับ</option>
+<option value="expense">รายจ่าย</option>
+</select>
+
+<input id="note" placeholder="รายละเอียด">
+
+<button onclick="addItem()">เพิ่มรายการ</button>
+
+</div>
+
+<div class="card">
+<h3>รายการล่าสุด</h3>
+<ul id="list"></ul>
+</div>
+
+<script>
+
+let data = JSON.parse(localStorage.getItem("moneyData")) || []
+
+function addItem(){
+
+let amount = Number(document.getElementById("amount").value)
+let type = document.getElementById("type").value
+let note = document.getElementById("note").value
+
+data.push({
+amount,
+type,
+note
+})
+
+localStorage.setItem("moneyData",JSON.stringify(data))
+
+render()
+
+}
+
+function render(){
+
+let list = document.getElementById("list")
+list.innerHTML = ""
+
+let balance = 0
+
+data.forEach(item=>{
+
+let li = document.createElement("li")
+
+li.innerText = item.note + " " + item.amount
+
+if(item.type=="income"){
+balance += item.amount
+}else{
+balance -= item.amount
+}
+
+list.appendChild(li)
+
+})
+
+document.getElementById("balance").innerText = balance + " บาท"
+
+}
+
+render()
+
+</script>
+
+</body>
+</html>
