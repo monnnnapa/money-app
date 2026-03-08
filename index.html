@@ -163,7 +163,7 @@ background:#555;
 
 <script>
 
-const API="https://script.google.com/macros/s/AKfycbysUtk8oaONYz2niNImv9rh_K9UH_USEaoFvst_9HBV7k4jAb7957sRNAxKg8z5pwqyRw/exec"
+const API="https://script.google.com/macros/s/AKfycbx4JNZtsdbTYurHbJQot7nNZQU2meYMJ1vF8XsStagbrC6fwZgG6Y5KDTAWpaj4CBP67A/exec"
 
 let expenseChart
 let savingChart
@@ -326,61 +326,60 @@ data:[house,car,kid,saving]
 
 }
 
-function drawGoalChart(house,car,kid){
+function drawGoalChart(goals){
 
 if(goalChart) goalChart.destroy()
 
-goalChart=new Chart(
+const labels = goals.map(g => g.name)
+const saved = goals.map(g => Number(g.saved))
+const target = goals.map(g => Number(g.target))
+
+goalChart = new Chart(
 
 document.getElementById("goalChart"),
 
 {
-type:"bar",
+type: "bar",
 
 data:{
 
-labels:["บ้าน","รถ","ลูก"],
+labels: labels,
 
-datasets:[{
+datasets:[
 
-label:"เงินเก็บ",
+{
+label:"เป้าหมาย",
+data: target,
+backgroundColor:"#e0e0e0"
+},
 
-data:[house,car,kid]
+{
+label:"เงินที่เก็บ",
+data: saved,
+backgroundColor:"#2c7be5"
+}
 
-}]
+]
+
+},
+
+options:{
+
+indexAxis:'y',
+
+responsive:true,
+
+plugins:{
+legend:{
+position:'bottom'
+}
+}
 
 }
 
 }
 
 )
-
-}
-
-async function save(){
-
-const type=document.getElementById("type").value
-const category=document.getElementById("category").value
-const amount=document.getElementById("amount").value
-
-await fetch(API,{
-
-method:"POST",
-
-body:JSON.stringify({
-
-type:type,
-category:category,
-amount:amount,
-date:new Date().toLocaleDateString()
-
-})
-
-})
-
-document.getElementById("popup").style.display="block"
-
-load()
 
 }
 
@@ -405,8 +404,16 @@ el.style.display="none"
 }
 
 }
+  async function loadGoals(){
 
-load()
+const res = await fetch(API + "?sheet=goals")
+const data = await res.json()
+
+drawGoalChart(data)
+
+}
+
+loadGoals()
 
 </script>
 
