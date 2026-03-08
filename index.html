@@ -1,95 +1,51 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-
 <meta charset="UTF-8">
-<title>Money Tracker</title>
-
-<link rel="stylesheet" href="style.css">
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+<title>Finance Dashboard</title>
 </head>
 
 <body>
 
-<div class="container">
+<h1>Finance Dashboard</h1>
 
-<h1>💰 Money Tracker</h1>
+<h2>Goals</h2>
+<div id="goals"></div>
 
-<div class="balance-card">
+<h2>Transactions</h2>
+<div id="transactions"></div>
 
-<h2>เงินคงเหลือ</h2>
+<script>
 
-<h1 id="totalMoney">฿0</h1>
+const API_URL = "https://script.google.com/macros/s/AKfycbwUI-sPYGV_7QQEkzv70klIzJbj6IFnETw0E134xrqCM8BILroVNDh6_wP-EjaLVCjVkw/exec";
 
-</div>
+fetch(API_URL)
+.then(res=>res.json())
+.then(data=>{
 
-<form id="form">
+const goals = data.goals
+const transactions = data.transactions
 
-<select id="type">
-<option value="income">รายรับ</option>
-<option value="expense">รายจ่าย</option>
-</select>
+const goalBox = document.getElementById("goals")
+const transBox = document.getElementById("transactions")
 
-<select id="category">
-<option value="Food">ค่ากิน</option>
-<option value="Gas">ค่าน้ำมัน</option>
-<option value="Travel">ค่าเที่ยว</option>
-<option value="Future">อนาคต</option>
-</select>
+goals.forEach(g=>{
+goalBox.innerHTML += `
+<div>
+${g.name} ${g.saved}/${g.target}
+</div>`
+})
 
-<input type="number" id="amount" placeholder="จำนวนเงิน" required>
+transactions.forEach(t=>{
+transBox.innerHTML += `
+<div>
+${t.date} ${t.category} ${t.amount}
+</div>`
+})
 
-<button type="submit">บันทึก</button>
+})
 
-</form>
-
-<div class="charts">
-
-<div class="chart-box">
-<h3>สัดส่วนรายจ่าย</h3>
-<canvas id="expenseChart"></canvas>
-</div>
-
-<div class="chart-box">
-<h3>Goal</h3>
-<canvas id="goalChart"></canvas>
-</div>
-
-</div>
-
-<div class="history">
-
-<h3>ประวัติรายการล่าสุด</h3>
-
-<ul id="transactionList"></ul>
-
-<a
-class="sheet-btn"
-href="https://docs.google.com/spreadsheets/d/1IOMppJFPrQN9XzY8-ZPYVBHlJyNIEayNLoBkjAHZtaE/edit?usp=sharing"
-target="_blank"
->
-ดูทั้งหมดใน Google Sheet
-</a>
-
-</div>
-
-</div>
-
-<div id="popup" class="popup">
-
-<div class="popup-content">
-
-<p>✅ บันทึกข้อมูลเรียบร้อย</p>
-
-<button onclick="closePopup()">ปิด</button>
-
-</div>
-
-</div>
-
-<script src="app.js"></script>
+</script>
 
 </body>
 </html>
