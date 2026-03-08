@@ -69,6 +69,19 @@ method:"DELETE"
 loadData()
 
 }
+let balance = 0
 
+data.forEach(item=>{
+
+if(item.type === "income"){
+balance += Number(item.amount)
+}else{
+balance -= Number(item.amount)
+}
+
+})
+
+document.getElementById("balance").innerText =
+"฿" + balance.toLocaleString()
 
 loadData()
