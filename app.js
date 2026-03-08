@@ -1,4 +1,4 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwqqhi9c47fwoqlZ6sABBMBzPntzPV1ANP6RfMClCdKIG3ixx04mXNBfo6ST7ufImCtTQ/exec"
+const API_URL = "https://script.google.com/macros/s/AKfycbzJCO46vX7g7c8f1ubPYtc_dq3jxtoE6M-CHJTpZBPXiV8syghiYauCR1EMQgGBJzglfw/exec"
 
 let chart = null
 
@@ -13,7 +13,7 @@ fetch(API_URL)
 renderTotal(data)
 renderChart(data)
 renderTransactions(data)
-renderGoalChart(data)
+renderGoalChart()
 
 })
 
@@ -170,60 +170,57 @@ function closePopup(){
 document.getElementById("popup").style.display="none"
 }
 
-function renderGoalChart(list){
-
-let total = 0
-
-list.forEach(t=>{
-if(t.type==="income"){
-total += Number(t.amount)
-}else{
-total -= Number(t.amount)
-}
-})
+function renderGoalChart(){
 
 fetch(API_URL + "?sheet=goal")
-.then(res=>res.json())
-.then(goals=>{
+.then(res => res.json())
+.then(goals => {
 
-let labels=[]
-let goalValues=[]
-let currentValues=[]
+let labels = []
+let savedData = []
+let targetData = []
 
-goals.forEach(g=>{
+goals.forEach(g => {
 
 labels.push(g.name)
-goalValues.push(Number(g.amount))
-currentValues.push(total)
+savedData.push(Number(g.saved))
+targetData.push(Number(g.target))
 
 })
 
-const ctx=document.getElementById("goalChart")
+const ctx = document.getElementById("goalChart")
+
+if(!ctx) return
 
 if(goalChart){
 goalChart.destroy()
 }
 
-goalChart=new Chart(ctx,{
+goalChart = new Chart(ctx, {
 
-type:'bar',
+type: 'bar',
 
-data:{
-labels:labels,
-datasets:[
+data: {
+labels: labels,
+datasets: [
 {
-label:"เงินปัจจุบัน",
-data:currentValues
+label: "เงินที่เก็บแล้ว",
+data: savedData
 },
 {
-label:"เป้าหมาย",
-data:goalValues
+label: "เป้าหมาย",
+data: targetData
 }
 ]
 },
 
-options:{
-responsive:true
+options: {
+responsive: true,
+plugins:{
+legend:{
+position:'bottom'
+}
+}
 }
 
 })
@@ -231,5 +228,4 @@ responsive:true
 })
 
 }
-
 loadData()
