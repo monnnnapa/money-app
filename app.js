@@ -13,6 +13,7 @@ fetch(API_URL)
 renderTotal(data)
 renderChart(data)
 renderTransactions(data)
+renderGoalChart(data)
 
 })
 
@@ -95,7 +96,10 @@ let box = document.getElementById("transactionList")
 
 box.innerHTML = ""
 
-list.slice().reverse().forEach(t => {
+/* เอาแค่ 10 ล่าสุด */
+let latest = list.slice(-10).reverse()
+
+latest.forEach(t => {
 
 let cls = t.type === "income" ? "income" : "expense"
 let sign = t.type === "income" ? "+" : "-"
@@ -166,6 +170,66 @@ function closePopup(){
 document.getElementById("popup").style.display="none"
 }
 
+function renderGoalChart(list){
 
+let total = 0
+
+list.forEach(t=>{
+if(t.type==="income"){
+total += Number(t.amount)
+}else{
+total -= Number(t.amount)
+}
+})
+
+fetch(API_URL + "?sheet=goal")
+.then(res=>res.json())
+.then(goals=>{
+
+let labels=[]
+let goalValues=[]
+let currentValues=[]
+
+goals.forEach(g=>{
+
+labels.push(g.name)
+goalValues.push(Number(g.amount))
+currentValues.push(total)
+
+})
+
+const ctx=document.getElementById("goalChart")
+
+if(goalChart){
+goalChart.destroy()
+}
+
+goalChart=new Chart(ctx,{
+
+type:'bar',
+
+data:{
+labels:labels,
+datasets:[
+{
+label:"เงินปัจจุบัน",
+data:currentValues
+},
+{
+label:"เป้าหมาย",
+data:goalValues
+}
+]
+},
+
+options:{
+responsive:true
+}
+
+})
+
+})
+
+}
 
 loadData()
