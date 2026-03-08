@@ -1,34 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>Money App</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Together</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
+
 body{
 font-family:sans-serif;
+background:#eef2f7;
 padding:20px;
-background:#f4f6fb;
+}
+
+.container{
+max-width:420px;
+margin:auto;
 }
 
 .card{
 background:white;
 padding:20px;
-border-radius:10px;
+border-radius:16px;
 margin-bottom:20px;
 }
 
-button{
-padding:10px 20px;
-background:#4c7cff;
-color:white;
-border:none;
-border-radius:6px;
+.balance{
+font-size:32px;
+font-weight:bold;
+text-align:center;
 }
 
 input,select{
-padding:8px;
-margin:5px;
+width:100%;
+padding:10px;
+margin-top:8px;
+}
+
+button{
+width:100%;
+padding:12px;
+margin-top:10px;
+background:#3b82f6;
+border:none;
+color:white;
+border-radius:10px;
+}
+
+.list-item{
+display:flex;
+justify-content:space-between;
+border-bottom:1px solid #eee;
+padding:8px 0;
 }
 
 </style>
@@ -37,19 +62,32 @@ margin:5px;
 
 <body>
 
-<h2>เงินกองกลาง</h2>
+<div class="container">
 
 <div class="card">
-<h1 id="balance">0 บาท</h1>
+
+<h3>เงินกองกลาง</h3>
+<div class="balance" id="balance">0</div>
+
+<canvas id="chart"></canvas>
+
 </div>
 
 <div class="card">
+
+<h3>เพิ่มรายการ</h3>
 
 <input id="amount" type="number" placeholder="จำนวนเงิน">
 
 <select id="type">
 <option value="income">รายรับ</option>
 <option value="expense">รายจ่าย</option>
+</select>
+
+<select id="category">
+<option value="food">ค่ากิน</option>
+<option value="gas">ค่าน้ำมัน</option>
+<option value="travel">ค่าเที่ยว</option>
 </select>
 
 <input id="note" placeholder="รายละเอียด">
@@ -59,23 +97,43 @@ margin:5px;
 </div>
 
 <div class="card">
+
 <h3>รายการล่าสุด</h3>
-<ul id="list"></ul>
+
+<div id="list"></div>
+
+</div>
+
 </div>
 
 <script>
 
 let data = JSON.parse(localStorage.getItem("moneyData")) || []
 
+const ctx = document.getElementById('chart')
+
+let chart = new Chart(ctx,{
+type:'doughnut',
+data:{
+labels:['ค่ากิน','ค่าน้ำมัน','ค่าเที่ยว'],
+datasets:[{
+data:[0,0,0],
+backgroundColor:['#f97316','#3b82f6','#22c55e']
+}]
+}
+})
+
 function addItem(){
 
 let amount = Number(document.getElementById("amount").value)
 let type = document.getElementById("type").value
+let category = document.getElementById("category").value
 let note = document.getElementById("note").value
 
 data.push({
 amount,
 type,
+category,
 note
 })
 
@@ -87,28 +145,39 @@ render()
 
 function render(){
 
-let list = document.getElementById("list")
-list.innerHTML = ""
-
 let balance = 0
+let food=0
+let gas=0
+let travel=0
 
-data.forEach(item=>{
+let listHTML=""
 
-let li = document.createElement("li")
+data.slice().reverse().forEach(item=>{
 
-li.innerText = item.note + " " + item.amount
-
-if(item.type=="income"){
-balance += item.amount
+if(item.type==="income"){
+balance+=item.amount
 }else{
-balance -= item.amount
+balance-=item.amount
+
+if(item.category==="food") food+=item.amount
+if(item.category==="gas") gas+=item.amount
+if(item.category==="travel") travel+=item.amount
 }
 
-list.appendChild(li)
+listHTML += `
+<div class="list-item">
+<span>${item.note}</span>
+<span>${item.type==="income"?"+":"-"}${item.amount}</span>
+</div>
+`
 
 })
 
-document.getElementById("balance").innerText = balance + " บาท"
+document.getElementById("balance").innerText="฿"+balance
+document.getElementById("list").innerHTML=listHTML
+
+chart.data.datasets[0].data=[food,gas,travel]
+chart.update()
 
 }
 
