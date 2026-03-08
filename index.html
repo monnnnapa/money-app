@@ -1,12 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Money Tracker</title>
+<title>กองกลางของเรา</title>
 
 <link rel="stylesheet" href="style.css">
 
@@ -16,98 +12,38 @@
 
 <body>
 
-<div class="container">
+<div class="app">
 
-<div class="header">
-💰 Money Tracker
+<h1>เงินกองกลางของเรา</h1>
+
+<div class="balance-box">
+฿<span id="balance">0</span>
 </div>
 
-
-<!-- total -->
-
-<div class="total-card">
-
-<div>ยอดเงินคงเหลือ</div>
-
-<h2>฿<span id="totalMoney">0</span></h2>
-
-</div>
-
-
-<!-- chart -->
-
-<div class="chart-box">
+<div class="card">
 
 <canvas id="pieChart"></canvas>
 
 </div>
-  
-<!-- goal chart -->
-<div class="chart-box">
 
-<h3>เป้าหมายการเก็บเงิน</h3>
+<div class="card">
 
-<canvas id="goalChart"></canvas>
+<h2>เป้าหมายร่วมกัน</h2>
+
+<div id="goals"></div>
 
 </div>
-  
 
-<!-- form -->
+<div class="card">
 
-<div class="form-box">
+<h2>การใช้เงินกองกลาง</h2>
 
-<select id="type">
-<option value="expense">รายจ่าย</option>
-<option value="income">รายรับ</option>
-</select>
-
-<select id="category" placeholder="หมวดหมู่">
-<option value="food">กิน</option>
-<option value="travel">เที่ยว</option>
-<option value="gas">น้ำมัน</option>
-</select>
-
-
-<input id="amount" type="number" placeholder="จำนวนเงิน">
-
-<button onclick="saveTransaction()">
-บันทึกรายการ
-</button>
+<div id="transactions"></div>
 
 </div>
 
 </div>
 
-
-<!-- popup -->
-
-<div id="popup" class="popup">
-
-<div class="popup-box">
-
-<h3>บันทึกเรียบร้อย</h3>
-
-<p>รายการถูกบันทึกแล้ว</p>
-
-<button onclick="closePopup()">ปิด</button>
-
-</div>
-
-</div>
-
-
-<!-- transactions -->
-
-<div class="transaction-list" id="transactionList"></div>
-
-<div class="view-more">
-
-<a href="https://docs.google.com/spreadsheets/d/1IOMppJFPrQN9XzY8-ZPYVBHlJyNIEayNLoBkjAHZtaE/edit?usp=sharing" target="_blank">
-ดูรายการทั้งหมด
-</a>
-
-</div>
-  
 <script src="app.js"></script>
 
 </body>
