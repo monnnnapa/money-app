@@ -133,12 +133,11 @@ ${sign}${t.amount}
 })
 
 }
+function saveTransaction(){
 
-function addTransaction(){
-
-let type=prompt("income / expense")
-let category=prompt("หมวด")
-let amount=prompt("จำนวนเงิน")
+let type = document.getElementById("type").value
+let category = document.getElementById("category").value
+let amount = document.getElementById("amount").value
 
 fetch(API_URL,{
 
@@ -147,14 +146,23 @@ method:"POST",
 body:JSON.stringify({
 
 action:"addTransaction",
-
 type:type,
 category:category,
 amount:amount
 
 })
 
-}).then(()=>loadData())
+})
+.then(res=>res.text())
+.then(()=>{
+
+document.getElementById("amount").value=""
+
+loadData()
+
+})
+
+}
 
 }
 
