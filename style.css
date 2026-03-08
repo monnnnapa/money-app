@@ -55,7 +55,11 @@ box-shadow:0 6px 20px rgba(0,0,0,0.06);
 margin-bottom:20px;
 }
 
-
+.chart-box h3{
+margin-top:0;
+margin-bottom:10px;
+font-size:16px;
+}
 
 /* transaction list */
 
@@ -172,6 +176,27 @@ padding:16px;
 
 .total-card h2{
 font-size:24px;
+}
+
+/* viewmore */
+.view-more{
+text-align:center;
+margin-top:10px;
+}
+
+.view-more a{
+display:inline-block;
+background:#eef1ff;
+padding:10px 16px;
+border-radius:10px;
+text-decoration:none;
+color:#5b7cfa;
+font-weight:600;
+font-size:14px;
+}
+
+.view-more a:hover{
+background:#dfe5ff;
 }
 
 }
