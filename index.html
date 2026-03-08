@@ -42,7 +42,27 @@
 <button class="addBtn" onclick="addTransaction()">
 + เพิ่มรายการ
 </button>
+<div class="formBox">
 
+<select id="type">
+<option value="expense">รายจ่าย</option>
+<option value="income">รายรับ</option>
+</select>
+
+<select id="category">
+<option>ค่ากิน</option>
+<option>ค่าน้ำมัน</option>
+<option>ค่าเที่ยว</option>
+<option>เงินเก็บ</option>
+</select>
+
+<input id="amount" type="number" placeholder="จำนวนเงิน">
+
+<button onclick="saveTransaction()">
+บันทึก
+</button>
+
+</div>
 </div>
 
 <script src="app.js"></script>
