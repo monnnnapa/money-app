@@ -3,20 +3,34 @@
 
 <head>
 <meta charset="UTF-8">
-<title>Money Tracker</title>
+<title>บันทึกรายรับรายจ่าย</title>
+
 <link rel="stylesheet" href="style.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
 
 <body>
+
+<h1>เงินกองกลางของเรา</h1>
+
 <h2 id="balance">฿0</h2>
-<h1>บันทึกรายรับรายจ่าย</h1>
+
+<canvas id="chart"></canvas>
 
 <div class="form">
 
-<input id="type" placeholder="type (income/expense)">
-<input id="category" placeholder="category">
-<input id="amount" placeholder="amount">
-<input id="note" placeholder="note">
+<select id="type">
+<option value="income">รายรับ</option>
+<option value="expense">รายจ่าย</option>
+</select>
+
+<input id="category" placeholder="หมวด">
+
+<input id="amount" type="number" placeholder="จำนวนเงิน">
+
+<input id="note" placeholder="รายละเอียด">
 
 <button onclick="addItem()">เพิ่มรายการ</button>
 
