@@ -1,40 +1,40 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbz8yxfXxJyP2trYuTWhIJacum8pXiV9SDicVW7Rdwrb0y13CixQSpNFuGZi7bVss48w1A/exec"
+const API_URL = "https://script.google.com/macros/s/AKfycbyvXkm3k0DWAmgtRJr0hyOTMTqa7Ajm0ERttHe2c8RrwIIlmp6dJfcN0ORYCjxjtpyNDg/exec"
 
-let chart = null
+const form = document.getElementById("form")
 
+let expenseChart
+let goalChart
 
+form.addEventListener("submit",function(e){
+
+e.preventDefault()
+
+const category = document.getElementById("category").value
+const amount = document.getElementById("amount").value
+const type = document.getElementById("type").value
+
+fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({category,amount,type})
+})
+.then(res=>res.text())
+.then(()=>{
+
+showPopup()
+
+loadData()
+
+})
+
+form.reset()
+
+})
 
 function loadData(){
 
 fetch(API_URL)
-.then(res => res.json())
-.then(data => {
-
-renderTotal(data)
-renderChart(data)
-renderTransactions(data)
-renderGoalChart()
-
-})
-
-}
-
-
-
-const API_URL = "https://script.google.com/macros/s/AKfycbz8yxfXxJyP2trYuTWhIJacum8pXiV9SDicVW7Rdwrb0y13CixQSpNFuGZi7bVss48w1A/exec"
-
-let chart = null
-let goalChart = null
-
-
-
-/* โหลดข้อมูล */
-
-function loadData(){
-
-fetch(API_URL)
-.then(res => res.json())
-.then(data => {
+.then(res=>res.json())
+.then(data=>{
 
 renderTotal(data)
 renderChart(data)
@@ -45,427 +45,134 @@ renderTransactions(data)
 renderGoalChart()
 
 }
-
-
-
-/* ยอดเงินรวม */
 
 function renderTotal(list){
 
 let total = 0
 
-list.forEach(t => {
+list.forEach(t=>{
 
-const amount = Number(t.amount) || 0
-
-if(t.type === "income"){
-total += amount
+if(t.type==="income"){
+total+=Number(t.amount)
 }
-else if(t.type === "expense"){
-total -= amount
+
+if(t.type==="expense"){
+total-=Number(t.amount)
 }
 
 })
 
-document.getElementById("totalMoney").innerText =
-total.toLocaleString()
+document.getElementById("totalMoney").innerText=
+"฿"+total.toLocaleString()
 
 }
-
-
-
-/* กราฟรายจ่าย */
 
 function renderChart(list){
 
-let categories = {}
+const expense={}
 
-list.forEach(t => {
+list.forEach(t=>{
 
-if(t.type === "expense"){
+if(t.type==="expense"){
 
-const amount = Number(t.amount) || 0
-
-if(!categories[t.category]){
-categories[t.category] = 0
+if(!expense[t.category]){
+expense[t.category]=0
 }
 
-categories[t.category] += amount
+expense[t.category]+=Number(t.amount)
 
 }
 
 })
 
-let labels = Object.keys(categories)
-let values = Object.values(categories)
+const labels=Object.keys(expense)
+const data=Object.values(expense)
 
-const ctx = document.getElementById("pieChart")
-
-if(!ctx) return
-
-if(chart){
-chart.destroy()
+if(expenseChart){
+expenseChart.destroy()
 }
 
-chart = new Chart(ctx,{
-type:'doughnut',
+expenseChart=new Chart(
 
+document.getElementById("expenseChart"),
+
+{
+type:"pie",
 data:{
 labels:labels,
-datasets:[{
-data:values
-}]
-},
-
-options:{
-responsive:true
+datasets:[{data:data}]
+}
 }
 
-})
+)
 
 }
-
-
-
-/* ประวัติรายการ (10 ล่าสุด) */
-
-function renderTransactions(list){
-
-let box = document.getElementById("transactionList")
-
-if(!box) return
-
-box.innerHTML = ""
-
-let latest = list.slice(-10).reverse()
-
-latest.forEach(t => {
-
-let cls = t.type === "income" ? "income" : "expense"
-let sign = t.type === "income" ? "+" : "-"
-
-box.innerHTML += `
-
-<div class="transaction">
-
-<div>
-<b>${t.category}</b>
-</div>
-
-<div class="${cls}">
-${sign}${Number(t.amount).toLocaleString()}
-</div>
-
-</div>
-
-`
-
-})
-
-}
-
-
-
-/* บันทึกรายการ */
-
-function saveTransaction(){
-
-let type = document.getElementById("type").value
-let category = document.getElementById("category").value
-let amount = document.getElementById("amount").value
-
-if(!amount){
-alert("กรอกจำนวนเงิน")
-return
-}
-
-fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-type:type,
-category:category,
-amount:amount
-})
-})
-.then(res => res.text())
-.then(() => {
-
-document.getElementById("amount").value=""
-
-loadData()
-
-showPopup()
-
-})
-
-}
-
-
-
-/* popup */
-
-function showPopup(){
-document.getElementById("popup").style.display="flex"
-}
-
-function closePopup(){
-document.getElementById("popup").style.display="none"
-}
-
-
-
-/* กราฟเป้าหมาย */
 
 function renderGoalChart(){
 
-fetch(API_URL + "?sheet=goal")
-.then(res => res.json())
-.then(goals => {
+fetch(API_URL+"?sheet=goal")
+.then(res=>res.json())
+.then(data=>{
 
-let labels=[]
-let savedData=[]
-let targetData=[]
-
-goals.forEach(g => {
-
-labels.push(g.name)
-savedData.push(Number(g.saved) || 0)
-targetData.push(Number(g.target) || 0)
-
-})
-
-const ctx=document.getElementById("goalChart")
-
-if(!ctx) return
+const labels=data.map(r=>r.category)
+const values=data.map(r=>Number(r.amount))
 
 if(goalChart){
 goalChart.destroy()
 }
 
-goalChart=new Chart(ctx,{
+goalChart=new Chart(
 
-type:'bar',
+document.getElementById("goalChart"),
 
-data:{
-labels:labels,
-datasets:[
 {
-label:"เงินที่เก็บแล้ว",
-data:savedData
-},
-{
-label:"เป้าหมาย",
-data:targetData
-}
-]
-},
-
-options:{
-responsive:true,
-plugins:{
-legend:{
-position:'bottom'
-}
-}
-}
-
-})
-
-})
-
-}
-
-
-
-/* เริ่มโหลด */
-
-loadData()
-
-
-function renderChart(list){
-
-let categories = {}
-
-list.forEach(t => {
-
-if(t.type === "expense"){
-
-if(!categories[t.category]){
-categories[t.category] = 0
-}
-
-categories[t.category] += Number(t.amount)
-
-}
-
-})
-
-let labels = Object.keys(categories)
-let values = Object.values(categories)
-
-const ctx = document.getElementById("pieChart")
-
-if(chart){
-chart.destroy()
-}
-
-chart = new Chart(ctx,{
-
-type:'doughnut',
-
+type:"bar",
 data:{
 labels:labels,
 datasets:[{
+label:"Goal",
 data:values
 }]
-},
-
-options:{
-responsive:true
 }
+}
+
+)
 
 })
 
 }
-
-
 
 function renderTransactions(list){
 
-let box = document.getElementById("transactionList")
+const ul=document.getElementById("transactionList")
 
-box.innerHTML = ""
+ul.innerHTML=""
 
-/* เอาแค่ 10 ล่าสุด */
-let latest = list.slice(-10).reverse()
+const latest=list.slice(-10).reverse()
 
-latest.forEach(t => {
+latest.forEach(t=>{
 
-let cls = t.type === "income" ? "income" : "expense"
-let sign = t.type === "income" ? "+" : "-"
+const li=document.createElement("li")
 
-box.innerHTML += `
+li.innerText=
+t.category+" - ฿"+Number(t.amount).toLocaleString()
 
-<div class="transaction">
-
-<div>
-<b>${t.category}</b>
-</div>
-
-<div class="${cls}">
-${sign}${Number(t.amount).toLocaleString()}
-</div>
-
-</div>
-
-`
+ul.appendChild(li)
 
 })
 
 }
-
-
-
-function saveTransaction(){
-
-let type = document.getElementById("type").value
-let category = document.getElementById("category").value
-let amount = document.getElementById("amount").value
-
-if(!amount){
-alert("กรอกจำนวนเงิน")
-return
-}
-
-fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({
-type:type,
-category:category,
-amount:amount
-})
-})
-.then(res => res.text())
-.then(() => {
-
-document.getElementById("amount").value=""
-
-loadData()
-
-showPopup()
-
-})
-
-}
-
-
 
 function showPopup(){
+
 document.getElementById("popup").style.display="flex"
+
 }
-
-
 
 function closePopup(){
+
 document.getElementById("popup").style.display="none"
-}
-
-function renderGoalChart(){
-
-fetch(API_URL + "?sheet=goal")
-.then(res => res.json())
-.then(goals => {
-
-let labels = []
-let savedData = []
-let targetData = []
-
-goals.forEach(g => {
-
-labels.push(g.name)
-savedData.push(Number(g.saved))
-targetData.push(Number(g.target))
-
-})
-
-const ctx = document.getElementById("goalChart")
-
-if(!ctx) return
-
-if(goalChart){
-goalChart.destroy()
-}
-
-goalChart = new Chart(ctx, {
-
-type: 'bar',
-
-data: {
-labels: labels,
-datasets: [
-{
-label: "เงินที่เก็บแล้ว",
-data: savedData
-},
-{
-label: "เป้าหมาย",
-data: targetData
-}
-]
-},
-
-options: {
-responsive: true,
-plugins:{
-legend:{
-position:'bottom'
-}
-}
-}
-
-})
-
-})
 
 }
+
 loadData()
