@@ -150,15 +150,18 @@ if(type==="expense"){
 
 category.innerHTML=`
 
-<option value="house">บ้าน</option>
-<option value="car">รถ</option>
-<option value="child">ลูก</option>
+<option value="house">วัตถุดิบ</option>
+<option value="car">น้ำมัน</option>
+<option value="child">เงินเก็บ</option>
+
+
+`
+/*
 <option value="food">กิน</option>
 <option value="travel">เที่ยว</option>
 <option value="fuel">น้ำมัน</option>
 <option value="other">อื่นๆ</option>
-
-`
+*/
 
 }
 
@@ -185,18 +188,18 @@ let expense=0
 let house=0
 let car=0
 let child=0
-let food=0
+/*let food=0
 let travel=0
 let fuel=0
-let other=0
+let other=0*/
 
 let expHouse=0
 let expCar=0
 let expChild=0
-let expFood=0
+/*let expFood=0
 let expTravel=0
 let expFuel=0
-let expOther=0
+let expOther=0*/
 
 let historyHTML=""
 
@@ -206,85 +209,134 @@ const amount=Number(t.amount)||0
 
 if(t.type==="income"){
 
-income+=amount
+income += amount
 
-food += 1200
-fuel += 2000
-other += 500
-travel += 1600
-
-house += amount * 0.62
-child += amount * 0.31
-car += amount * 0.07
+/* แบ่งเงินตามสัดส่วน */
+house += amount * 0.1667
+car   += amount * 0.2778
+child += amount * 0.5556
 
 }
 
 if(t.type==="expense"){
 
-expense+=amount
+expense += amount
 
-if(t.category==="house"){house-=amount;expHouse+=amount}
-if(t.category==="car"){car-=amount;expCar+=amount}
-if(t.category==="child"){child-=amount;expChild+=amount}
-if(t.category==="food"){food-=amount;expFood+=amount}
-if(t.category==="travel"){travel-=amount;expTravel+=amount}
-if(t.category==="fuel"){fuel-=amount;expFuel+=amount}
-if(t.category==="other"){other-=amount;expOther+=amount}
+/* หักเฉพาะหมวด */
+if(t.category==="house"){
+house -= amount
+expHouse += amount
+}
+
+if(t.category==="car"){
+car -= amount
+expCar += amount
+}
+
+if(t.category==="child"){
+child -= amount
+expChild += amount
+}
 
 }
 
+/* กันเงินติดลบ */
+house = Math.max(house,0)
+car = Math.max(car,0)
+child = Math.max(child,0)
+
+/* แปลงชื่อหมวด */
+let catName = t.category
+
+if(catName==="house") catName="วัตถุดิบ"
+if(catName==="car") catName="น้ำมัน"
+if(catName==="child") catName="เงินเก็บ"
+if(catName==="salary") catName="เงินเดือน"
+
+/* history */
 historyHTML+=`
 <div>
-${t.date} | ${t.category} | ${amount} บาท
+${t.date} | ${catName} | ${amount} บาท
 <div class="note">${t.note||""}</div>
 </div>
 `
 
 })
 
+const totalBalance = house + car + child
+
+const housePercent = totalBalance ? (house/totalBalance)*100 : 0
+const carPercent = totalBalance ? (car/totalBalance)*100 : 0
+const childPercent = totalBalance ? (child/totalBalance)*100 : 0
+
 document.getElementById("balance").innerText=income-expense
 document.getElementById("history").innerHTML=historyHTML
 
-drawExpenseChart(expHouse,expCar,expChild,expFood,expTravel,expFuel,expOther)
-drawSavingChart(house,car,child,food,travel,fuel,other)
+drawExpenseChart(expHouse,expCar,expChild)
+/*drawExpenseChart(expHouse,expCar,expChild,expFood,expTravel,expFuel,expOther)*/
+drawSavingChart(house,car,child)
 
-loadGoals()
+
 
 }
 
-function drawExpenseChart(house,car,child,food,travel,fuel,other){
+function drawExpenseChart(house,car,child){
+/*function drawExpenseChart(house,car,child,food,travel,fuel,other){*/
 
 if(expenseChart) expenseChart.destroy()
 
 expenseChart=new Chart(document.getElementById("expenseChart"),{
 type:"pie",
 data:{
-labels:["บ้าน","รถ","ลูก","กิน","เที่ยว","น้ำมัน","อื่นๆ"],
+labels:["วัตถุดิบ","น้ำมัน","เงินเก็บ"],
+datasets:[{
+data:[house,car,child],
+backgroundColor:[
+"#ff6b6b","#4dabf7","#20c997"
+]
+}]
+/*labels:["บ้าน","รถ","ลูก","กิน","เที่ยว","น้ำมัน","อื่นๆ"],
 datasets:[{
 data:[house,car,child,food,travel,fuel,other],
 backgroundColor:[
 "#ff6b6b","#845ef7","#20c997",
 "#ffd43b","#ffa94d","#4dabf7","#adb5bd"
 ]
-}]
+}]*/
 }
 })
 
 }
 
-function drawSavingChart(house,car,child,food,travel,fuel,other){
+function drawSavingChart(house,car,child){
+
+/* ปัดทศนิยมให้เหลือ 1 ตำแหน่ง */
+house = Number(house.toFixed(0))
+car   = Number(car.toFixed(0))
+child = Number(child.toFixed(0))
 
 if(savingChart) savingChart.destroy()
+
+const total = house + car + child
+
+const housePercent = total ? (house/total*100).toFixed(0) : 0
+const carPercent = total ? (car/total*100).toFixed(0) : 0
+const childPercent = total ? (child/total*100).toFixed(0) : 0
 
 savingChart=new Chart(document.getElementById("savingChart"),{
 type:"pie",
 data:{
-labels:["บ้าน","รถ","ลูก","กิน","เที่ยว","น้ำมัน","อื่นๆ"],
+labels:[
+`วัตถุดิบ ${house} (${housePercent}%)`,
+`น้ำมัน ${car} (${carPercent}%)`,
+`เงินเก็บ ${child} (${childPercent}%)`
+],
 datasets:[{
-data:[house,car,child,food,travel,fuel,other],
+data:[house,car,child],
 backgroundColor:[
-"#69db7c","#845ef7","#20c997",
-"#ffd43b","#ffa94d","#4dabf7","#adb5bd"
+"#69db7c",
+"#4dabf7",
+"#20c997"
 ]
 }]
 }
@@ -292,14 +344,14 @@ backgroundColor:[
 
 }
 
-async function loadGoals(){
+/*async function loadGoals(){
 
 try{
 
 const res=await fetch(API+"?sheet=goals")
 const data=await res.json()
 
-const categories=["บ้าน","รถ","ลูก","กิน","เที่ยว","น้ำมัน","อื่นๆ"]
+const categories=["วัตถุดิบ","น้ำมัน","เงินเก็บ"]
 
 let percent=[]
 let labelsFull=[]
@@ -370,7 +422,7 @@ console.log("no goals sheet")
 
 }
 
-}
+}*/
 
 async function save(){
 
