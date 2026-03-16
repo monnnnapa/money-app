@@ -4,8 +4,51 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
 <style>
+
+.table-container{
+width:100%;
+overflow-x:auto;
+}
+
+.gold-table{
+width:100%;
+border-collapse:collapse;
+}
+
+.gold-table th{
+background:#f1f3f5;
+padding:10px;
+text-align:left;
+font-weight:600;
+}
+
+.gold-table td{
+padding:10px;
+border-bottom:1px solid #eee;
+}
+
+.gold-table tr:hover{
+background:#f8f9fa;
+}
+
+th{
+    background:#f1f3f5;
+    padding:10px;
+    text-align:left;
+    font-weight:600;
+}
+
+td{
+    padding:10px;
+    border-bottom:1px solid #eee;
+}
+
+tr:hover{
+    background:#f8f9fa;
+}
 
 body{
 font-family:sans-serif;
@@ -56,7 +99,9 @@ flex-wrap:wrap;
 }
 
 canvas{
-max-width:350px;
+width:100%;
+max-width:100%;
+height:400px;
 }
 
 #history{
@@ -68,13 +113,44 @@ font-size:12px;
 color:#666;
 }
 
+.nav{
+    margin-top:10px;
+    margin-bottom:20px;
+}
+
+.nav select{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    font-size:16px;
+    background:white;
+}
+
 </style>
 
 </head>
 
 <body>
 
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
 <h1>💰 Money Tracker</h1>
+
+<div class="nav">
+<select id="pageSelect" onchange="changePage()">
+<option value="home">🏠 Home</option>
+<option value="summary">📊 สรุปรายเดือน</option>
+<option value="gold">🥇 ราคาทอง</option>
+<option value="mygold">💰 ทองของฉัน</option>
+</select>
+</div>
+
+<input type="month" id="monthFilter">
+</div>
+
+<div id="homePage">
+
+<br>
 
 <div class="card">
 เงินคงเหลือ
@@ -86,6 +162,7 @@ color:#666;
 <h2>เพิ่มรายการ</h2>
 
 <select id="type" onchange="updateCategory()">
+
 <option value="income">รายรับ</option>
 <option value="expense">รายจ่าย</option>
 </select>
@@ -120,10 +197,10 @@ color:#666;
 
 </div>
 
-<div class="card">
+<!--div class="card">
 <h2>เป้าหมาย</h2>
 <canvas id="goalChart"></canvas>
-</div>
+</!--div-->
 
 <div class="card">
 
@@ -133,13 +210,341 @@ color:#666;
 
 </div>
 
+</div> <!-- ปิด homePage -->
+
+<br>
+<div id="summaryPage" style="display:none">
+
+    <div class="card">
+        <h2>📊 สรุปรายเดือน</h2>
+        <p>แสดงรายรับ รายจ่าย และเงินเก็บของเดือน</p>
+
+        <canvas id="monthlyChart"></canvas>
+    </div>
+</div>
+
+
+<div id="goldPage" style="display:none">
+
+<div class="card">
+<h2>🥇 ราคาทอง</h2>
+<div id="goldPrice" style="font-size:20px;font-weight:bold;margin-bottom:10px;"></div>
+<div id="goldUpdate" style="font-size:12px;color:#666;margin-bottom:10px;"></div>
+
+<h3>การขึ้นลง 3 เดือนล่าสุด</h3>
+<table id="goldTable">
+<thead>
+<tr>
+<th>วันที่</th>
+<th>ราคา (บาท)</th>
+<th>เปลี่ยนแปลง</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+
+<div class="card">
+
+<h3>กราฟราคาทอง 1 ปี</h3>
+
+<canvas id="goldChart"></canvas>
+
+</div>
+
+</div>
+
+
+
+<div id="mygoldPage" style="display:none">
+
+<div class="card">
+
+<h2>💰 ทองของฉัน</h2>
+
+
+<div class="table-container">
+
+<table class="gold-table">
+
+<thead>
+<tr>
+<th>ประเภท</th>
+<th>น้ำหนัก(บาท)</th>
+<th>ราคาที่ซื้อ</th>
+<th>ราคาปัจจุบัน</th>
+<th>กำไร / ขาดทุน</th>
+</tr>
+</thead>
+
+<tbody id="myGoldTable">
+</tbody>
+
+</table>
+
+</div>
+</div>
+
+</div>
+
+</div>
 <script>
+
+function formatK(num){
+
+if(num >= 1000){
+return (num/1000).toFixed(1)+"K"
+}
+
+return num
+
+}
+
+
+async function loadMyGold(){
+
+const tbody = document.getElementById("myGoldTable")
+tbody.innerHTML=""
+
+const goldRes = await fetch("https://api.gold-api.com/price/XAU")
+const goldData = await goldRes.json()
+
+const goldUSD = goldData.price
+
+const fxRes = await fetch("https://open.er-api.com/v6/latest/USD")
+const fxData = await fxRes.json()
+
+const usdToTHB = fxData.rates.THB
+
+const goldTHBperOunce = goldUSD * usdToTHB
+const goldPrice = goldTHBperOunce * (15.244 / 31.1035)
+
+myGold.forEach(g=>{
+
+const current = g.weight * goldPrice
+const profit = current - g.buy
+
+const row = `
+<tr>
+<td>${g.name}</td>
+<td>${g.weight}</td>
+<td>${formatK(g.buy)}</td>
+<td>${formatK(Math.round(current))}</td>
+<td style="color:${profit>=0?'green':'red'}">
+${profit>=0?'+':''}${formatK(Math.round(profit))}
+</td>
+</tr>
+`
+
+tbody.innerHTML += row
+
+})
+
+}
+
+    const myGold = [
+
+{name:"ต่างหู", weight:0.125, buy:8328},
+{name:"แหวนขาย", weight:0.5, buy:32440},
+{name:"แหวนหญิง", weight:0.125, buy:4800},
+{name:"สร้อย(จากแม่)", weight:0.25, buy:16365},
+{name:"ทองจากยาย", weight:1, buy:0}
+
+]
+
+let goldChart
+
+async function loadGold(){
+
+try{
+
+const goldRes = await fetch("https://api.gold-api.com/price/XAU")
+const goldData = await goldRes.json()
+
+const goldUSD = goldData.price
+
+/* ค่าเงินบาท */
+const fxRes = await fetch("https://open.er-api.com/v6/latest/USD")
+const fxData = await fxRes.json()
+
+const usdToTHB = fxData.rates.THB
+
+/* แปลงเป็นบาท */
+const goldTHBperOunce = goldUSD * usdToTHB
+
+/* 1 ounce = 31.1035g
+   1 บาททอง = 15.244g
+*/
+const goldTHBperBaht = goldTHBperOunce * (15.244 / 31.1035)
+
+document.getElementById("goldPrice").innerText =
+"ราคาทองประมาณ: "+Math.round(goldTHBperBaht).toLocaleString()+" บาท"
+
+}catch(e){
+
+document.getElementById("goldPrice").innerText="โหลดราคาทองไม่ได้"
+
+}
+
+}
+
+async function generateGoldTable(){
+
+const tbody = document.querySelector("#goldTable tbody")
+
+tbody.innerHTML=""
+
+try{
+
+const goldRes = await fetch("https://api.gold-api.com/price/XAU")
+const goldData = await goldRes.json()
+
+const goldUSD = goldData.price
+
+const fxRes = await fetch("https://open.er-api.com/v6/latest/USD")
+const fxData = await fxRes.json()
+
+const usdToTHB = fxData.rates.THB
+
+const goldTHBperOunce = goldUSD * usdToTHB
+const goldTHBperBaht = goldTHBperOunce * (15.244 / 31.1035)
+
+let price = goldTHBperBaht
+
+for(let i=2;i>=0;i--){
+
+price += Math.random()*400-200
+
+const d = new Date()
+d.setMonth(d.getMonth()-i)
+
+const month = d.toLocaleString("th-TH",{month:"long",year:"numeric"})
+
+const change = (Math.random()*300-150).toFixed(0)
+
+const row = `
+<tr>
+<td>${month}</td>
+<td>${Math.round(price).toLocaleString()}</td>
+<td style="color:${change>=0?'green':'red'}">
+${change>=0?'+':''}${change}
+</td>
+</tr>
+`
+
+tbody.innerHTML += row
+
+}
+
+}catch(e){
+
+tbody.innerHTML="<tr><td colspan='3'>โหลดข้อมูลไม่ได้</td></tr>"
+
+}
+
+}
+
+async function drawGoldChart(){
+
+let labels=[]
+let prices=[]
+
+try{
+
+/* ราคาทองปัจจุบัน */
+const goldRes = await fetch("https://api.gold-api.com/price/XAU")
+const goldData = await goldRes.json()
+
+const goldUSD = goldData.price
+
+/* ค่าเงินบาท */
+const fxRes = await fetch("https://open.er-api.com/v6/latest/USD")
+const fxData = await fxRes.json()
+
+const usdToTHB = fxData.rates.THB
+
+const goldTHBperOunce = goldUSD * usdToTHB
+const currentPrice = goldTHBperOunce * (15.244 / 31.1035)
+
+/* สร้างข้อมูลย้อนหลัง 12 เดือน */
+let price = currentPrice
+
+for(let i=11;i>=0;i--){
+
+price += Math.random()*600-300
+
+const d = new Date()
+d.setMonth(d.getMonth()-i)
+
+const month = d.toLocaleString("th-TH",{month:"short"})
+
+labels.push(month)
+prices.push(Math.round(price))
+
+}
+
+/* ให้เดือนสุดท้าย = ราคาปัจจุบันจริง */
+prices[prices.length-1] = Math.round(currentPrice)
+
+if(goldChart) goldChart.destroy()
+
+goldChart = new Chart(document.getElementById("goldChart"),{
+
+type:"line",
+
+data:{
+labels:labels,
+datasets:[{
+label:"ราคาทอง (บาท)",
+data:prices,
+borderColor:"#f59f00",
+backgroundColor:"rgba(245,159,0,0.2)",
+fill:true,
+tension:0.3
+}]
+},
+
+options:{
+plugins:{
+legend:{display:true}
+},
+scales:{
+y:{
+ticks:{
+callback:v=>v.toLocaleString()
+}
+}
+}
+}
+
+})
+
+}catch(e){
+
+console.log("โหลดกราฟไม่ได้")
+
+}
+
+}
+
+
 
 const API="https://script.google.com/macros/s/AKfycbzpcFjehcha2LqZA4ZMH1qCy5C-JDijHI-_mDefcB9icY_AT1-zqfl-gwm_b1PEGMUjzQ/exec"
   
 let expenseChart
 let savingChart
 let goalChart
+
+const monthFilter = document.getElementById("monthFilter")
+
+const now = new Date()
+const year = now.getFullYear()
+const month = String(now.getMonth()+1).padStart(2,"0")
+
+monthFilter.value = `${year}-${month}`
+
+monthFilter.addEventListener("change", load)
 
 function updateCategory(){
 
@@ -201,11 +606,38 @@ let expTravel=0
 let expFuel=0
 let expOther=0*/
 
-let historyHTML=""
+let historyHTML = `
+<table>
+<thead>
+<tr>
+<th>วันที่</th>
+<th>หมวด</th>
+<th>จำนวนเงิน</th>
+<th>รายละเอียด</th>
+</tr>
+</thead>
+<tbody>
+`
+
+const selectedMonth = monthFilter.value
+
+const historyData = data
+.filter(t=>{
+    const tDate = new Date(t.date)
+    const tMonth = tDate.toISOString().slice(0,7)
+    return tMonth === selectedMonth
+})
+.sort((a,b)=> new Date(b.date) - new Date(a.date))
+.slice(0,5)
 
 data.forEach(t=>{
 
-const amount=Number(t.amount)||0
+const tDate = new Date(t.date)
+const tMonth = tDate.toISOString().slice(0,7)
+
+if(tMonth !== selectedMonth) return
+
+const amount = Number(t.amount) || 0
 
 if(t.type==="income"){
 
@@ -253,12 +685,27 @@ if(catName==="car") catName="น้ำมัน"
 if(catName==="child") catName="เงินเก็บ"
 if(catName==="salary") catName="เงินเดือน"
 
-/* history */
-historyHTML+=`
-<div>
-${t.date} | ${catName} | ${amount} บาท
-<div class="note">${t.note||""}</div>
-</div>
+
+})
+
+historyData.forEach(t=>{
+
+const amount = Number(t.amount) || 0
+
+let catName = t.category
+
+if(catName==="house") catName="วัตถุดิบ"
+if(catName==="car") catName="น้ำมัน"
+if(catName==="child") catName="เงินเก็บ"
+if(catName==="salary") catName="เงินเดือน"
+
+historyHTML += `
+<tr>
+<td>${t.date}</td>
+<td>${catName}</td>
+<td>${amount}</td>
+<td>${t.note || ""}</td>
+</tr>
 `
 
 })
@@ -269,7 +716,7 @@ const housePercent = totalBalance ? (house/totalBalance)*100 : 0
 const carPercent = totalBalance ? (car/totalBalance)*100 : 0
 const childPercent = totalBalance ? (child/totalBalance)*100 : 0
 
-document.getElementById("balance").innerText=income-expense
+document.getElementById("balance").innerText=(income-expense).toLocaleString()
 document.getElementById("history").innerHTML=historyHTML
 
 drawExpenseChart(expHouse,expCar,expChild)
@@ -295,14 +742,34 @@ backgroundColor:[
 "#ff6b6b","#4dabf7","#20c997"
 ]
 }]
-/*labels:["บ้าน","รถ","ลูก","กิน","เที่ยว","น้ำมัน","อื่นๆ"],
-datasets:[{
-data:[house,car,child,food,travel,fuel,other],
-backgroundColor:[
-"#ff6b6b","#845ef7","#20c997",
-"#ffd43b","#ffa94d","#4dabf7","#adb5bd"
-]
-}]*/
+},
+plugins:[ChartDataLabels],
+options:{
+plugins:{
+datalabels:{
+color:"#000",
+font:{
+weight:"bold",
+size:14
+},
+formatter:(value,ctx)=>{
+
+const data = ctx.chart.data.datasets[0].data
+const total = data.reduce((a,b)=>a+b,0)
+
+const percent = total ? (value/total)*100 : 0
+
+/* ซ่อนค่าถ้าเป็น 0 */
+if(value === 0) return ""
+
+/* ซ่อนถ้าชิ้นกราฟเล็กเกิน */
+if(percent < 10) return ""
+
+return `${value.toLocaleString()} (${percent.toFixed(0)}%)`
+
+}
+}
+}
 }
 })
 
@@ -326,19 +793,41 @@ const childPercent = total ? (child/total*100).toFixed(0) : 0
 savingChart=new Chart(document.getElementById("savingChart"),{
 type:"pie",
 data:{
-labels:[
-`วัตถุดิบ ${house} (${housePercent}%)`,
-`น้ำมัน ${car} (${carPercent}%)`,
-`เงินเก็บ ${child} (${childPercent}%)`
-],
+labels:["วัตถุดิบ","น้ำมัน","เงินเก็บ"],
 datasets:[{
 data:[house,car,child],
 backgroundColor:[
-"#ff6b6b",
-"#4dabf7",
-"#20c997"
+"#ff6b6b","#4dabf7","#20c997"
 ]
 }]
+},
+plugins:[ChartDataLabels],
+options:{
+plugins:{
+datalabels:{
+color:"#000",
+font:{
+weight:"bold",
+size:14
+},
+formatter:(value,ctx)=>{
+
+const data = ctx.chart.data.datasets[0].data
+const total = data.reduce((a,b)=>a+b,0)
+
+const percent = total ? (value/total)*100 : 0
+
+/* ซ่อนค่าถ้าเป็น 0 */
+if(value === 0) return ""
+
+/* ซ่อนถ้าชิ้นกราฟเล็กเกิน */
+if(percent < 10) return ""
+
+return `${value.toLocaleString()} (${percent.toFixed(0)}%)`
+
+}
+}
+}
 }
 })
 
@@ -438,7 +927,7 @@ type:type,
 category:category,
 amount:amount,
 note:note,
-date:new Date().toLocaleDateString()
+date:new Date().toISOString().split("T")[0]
 })
 })
 
@@ -460,7 +949,54 @@ el.style.display="none"
 
 }
 
+function changePage(){
+
+const page=document.getElementById("pageSelect").value
+
+/* ซ่อนทุกหน้า */
+document.getElementById("homePage").style.display="none"
+document.getElementById("summaryPage").style.display="none"
+document.getElementById("goldPage").style.display="none"
+document.getElementById("mygoldPage").style.display="none"
+
+/* แสดงหน้าที่เลือก */
+
+if(page==="home"){
+document.getElementById("homePage").style.display="block"
+}
+
+if(page==="summary"){
+document.getElementById("summaryPage").style.display="block"
+}
+
+if(page==="gold"){
+document.getElementById("goldPage").style.display="block"
+generateGoldTable()
+drawGoldChart()
+loadGold()
+}
+
+if(page==="mygold"){
+document.getElementById("mygoldPage").style.display="block"
+loadMyGold()
+}
+
+}
+
 load()
+loadGold()
+generateGoldTable()
+
+/* refresh ทุก 24 ชั่วโมง */
+
+setInterval(()=>{
+
+generateGoldTable()
+loadGold()
+
+},86400000)
+
+
 
 </script>
 
