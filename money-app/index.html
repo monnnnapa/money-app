@@ -258,16 +258,64 @@ function drawSavingChart(food, fuel, saving){
     });
 }
 
-function drawMonthlyChart(income, expense){
-    if(monthlyChartObj) monthlyChartObj.destroy();
-    monthlyChartObj = new Chart(document.getElementById("monthlyChart"), {
-        type: "bar",
-        data: {
-            labels: ["รายรับ", "รายจ่าย", "สุทธิ"],
-            datasets: [{ data: [income, expense, income-expense], backgroundColor: ["#20c997", "#ff6b6b", "#4dabf7"] }]
-        },
-        options: { plugins: { legend: { display: false } } }
-    });
+function drawMonthlyChart(income, expense) {
+    const net = income - expense;
+
+    if (window.monthlyChartObj) window.monthlyChartObj.destroy();
+
+    window.monthlyChartObj = new Chart(
+        document.getElementById("monthlyChart"),
+        {
+            type: "bar",
+            data: {
+                labels: ["เงินเข้า", "เงินออก", "สุทธิ"],
+                datasets: [{
+                    data: [income, expense, net],
+                    backgroundColor: [
+                        "#20c997", // สีเขียว
+                        "#ff6b6b", // สีแดง
+                        "#4dabf7"  // สีฟ้า
+                    ]
+                }]
+            },
+            // --- ส่วนที่เพิ่มเพื่อแสดงตัวเลขบนกราฟ ---
+            plugins: [ChartDataLabels], 
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                        anchor: 'end',    // วางตำแหน่งจุดยึดที่ปลายแท่ง
+                        align: 'top',     // ให้ตัวเลขอยู่ด้านบนของจุดยึด
+                        color: '#495057', // สีตัวอักษร
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        formatter: function(value) {
+                            return value.toLocaleString(); // แสดงคอมม่าคั่นหลักพัน
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: v => v.toLocaleString()
+                        },
+                        // เพิ่ม padding ด้านบนเพื่อให้มีที่ว่างโชว์ตัวเลข
+                        grace: '15%' 
+                    }
+                },
+                // ป้องกันกราฟตัดตัวเลขด้านบน
+                layout: {
+                    padding: {
+                        top: 20
+                    }
+                }
+            }
+            // ------------------------------------
+        }
+    );
 }
 
 // Gold functions
