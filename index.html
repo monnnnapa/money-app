@@ -173,42 +173,67 @@ updateCategory();
 
 async function load(){
     try {
-        const res=await fetch(API);
-        const data=await res.json();
-        const selectedMonth = monthFilter.value;
+        const res = await fetch(API);
+        const data = await res.json();
+        const selectedMonth = monthFilter.value; // รูปแบบ "YYYY-MM"
+        
+        // แยกปีและเดือนที่เลือกเพื่อเปรียบเทียบ
+        const [selYear, selMonth] = selectedMonth.split('-').map(Number);
 
-        let income=0, expense=0;
-        let foodRemain=0, fuelRemain=0, savingRemain=0;
-        let expFood=0, expFuel=0, expSaving=0;
+        let income = 0, expense = 0;
+        let foodRemain = 0, fuelRemain = 0, savingRemain = 0;
+        let expFood = 0, expFuel = 0, expSaving = 0;
+        
+        // ตัวแปรสำหรับรวมยอดสะสมจากเดือนก่อนๆ (ยอดกดยกมา)
+        let previousAccumulated = 0;
 
-        // ประมวลผลข้อมูล
-        data.forEach(t=>{
+        data.forEach(t => {
             const tDate = new Date(t.date);
-            const tMonth = tDate.getFullYear()+"-"+String(tDate.getMonth()+1).padStart(2,"0");
-            if(tMonth !== selectedMonth) return;
-
+            const tYear = tDate.getFullYear();
+            const tMonth = tDate.getMonth() + 1;
             const amount = Number(t.amount) || 0;
-            if(t.type==="income"){
-                income += amount;
-                foodRemain += amount * 0.1667;
-                fuelRemain += amount * 0.2778;
-                savingRemain += amount * 0.5556;
-            } else {
-                expense += amount;
-                if(t.category==="food") { foodRemain -= amount; expFood += amount; }
-                if(t.category==="fuel") { fuelRemain -= amount; expFuel += amount; }
-                if(t.category==="saving") { savingRemain -= amount; expSaving += amount; }
+
+            // 1. คำนวณยอดสะสม "ก่อนหน้า" เดือนที่เลือก
+            if (tYear < selYear || (tYear === selYear && tMonth < selMonth)) {
+                if (t.type === "income") {
+                    previousAccumulated += amount;
+                } else {
+                    previousAccumulated -= amount;
+                }
+                return; // ข้ามไปรายการถัดไป ไม่ต้องเอามาคิดในยอดเดือนปัจจุบัน
+            }
+
+            // 2. คำนวณยอดเฉพาะ "เดือนที่เลือก"
+            const tMonthStr = tYear + "-" + String(tMonth).padStart(2, "0");
+            if (tMonthStr === selectedMonth) {
+                if (t.type === "income") {
+                    income += amount;
+                    foodRemain += amount * 0.1667;
+                    fuelRemain += amount * 0.2778;
+                    savingRemain += amount * 0.5556;
+                } else {
+                    expense += amount;
+                    if (t.category === "food") { foodRemain -= amount; expFood += amount; }
+                    if (t.category === "fuel") { fuelRemain -= amount; expFuel += amount; }
+                    if (t.category === "saving") { savingRemain -= amount; expSaving += amount; }
+                }
             }
         });
 
-        // Update UI
-        document.getElementById("balance").innerText = (income - expense).toLocaleString();
-        document.getElementById("sumIncome").innerText = income.toLocaleString();
-        document.getElementById("sumExpense").innerText = expense.toLocaleString();
-        document.getElementById("sumNet").innerText = (income - expense).toLocaleString();
-        document.getElementById("sumTotal").innerText = (START_BALANCE + (income - expense)).toLocaleString();
+        // สรุปยอดสะสมทั้งหมด = ยอดเริ่มต้น + สะสมเดือนก่อนหน้า + (รายรับเดือนนี้ - รายจ่ายเดือนนี้)
+        const currentNet = income - expense;
+        const totalAccumulated = START_BALANCE + previousAccumulated + currentNet;
 
-        // Render Charts
+        // Update UI
+        document.getElementById("balance").innerText = currentNet.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById("sumIncome").innerText = income.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById("sumExpense").innerText = expense.toLocaleString(undefined, {minimumFractionDigits: 2});
+        document.getElementById("sumNet").innerText = currentNet.toLocaleString(undefined, {minimumFractionDigits: 2});
+        
+        // แสดงยอดสะสมที่ถูกต้อง
+        document.getElementById("sumTotal").innerText = totalAccumulated.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+        // Render Charts และ History
         drawExpenseChart(expFood, expFuel, expSaving);
         drawSavingChart(Math.max(0, foodRemain), Math.max(0, fuelRemain), Math.max(0, savingRemain));
         drawMonthlyChart(income, expense);
@@ -219,191 +244,4 @@ async function load(){
 
 function renderHistory(data, selectedMonth) {
     const historyData = data.filter(t => {
-        const d = new Date(t.date);
-        return (d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")) === selectedMonth;
-    }).sort((a,b)=> new Date(b.date) - new Date(a.date)).slice(0,10);
-
-    let html = `<table style="width:100%"><thead><tr><th>วันที่</th><th>หมวด</th><th>เงิน</th><th>โน้ต</th></tr></thead><tbody>`;
-    historyData.forEach(t => {
-        let catMap = {food:"วัตถุดิบ", fuel:"น้ำมัน", saving:"เงินเก็บ", salary:"เงินเดือน"};
-        html += `<tr><td>${t.date.split('T')[0]}</td><td>${catMap[t.category] || t.category}</td><td>${Number(t.amount).toLocaleString()}</td><td>${t.note || ""}</td></tr>`;
-    });
-    html += `</tbody></table>`;
-    document.getElementById("history").innerHTML = html;
-}
-
-function drawExpenseChart(food, fuel, saving){
-    if(expenseChart) expenseChart.destroy();
-    expenseChart = new Chart(document.getElementById("expenseChart"), {
-        type: "pie",
-        data: {
-            labels: ["วัตถุดิบ", "น้ำมัน", "เงินเก็บ"],
-            datasets: [{ data: [food, fuel, saving], backgroundColor: ["#ff6b6b","#4dabf7","#20c997"] }]
-        },
-        plugins: [ChartDataLabels],
-        options: { plugins: { datalabels: { color: "#fff", formatter: (v, ctx) => v > 0 ? v.toLocaleString() : "" } } }
-    });
-}
-
-function drawSavingChart(food, fuel, saving){
-    if(savingChart) savingChart.destroy();
-    savingChart = new Chart(document.getElementById("savingChart"), {
-        type: "pie",
-        data: {
-            labels: ["วัตถุดิบ", "น้ำมัน", "เงินเก็บ"],
-            datasets: [{ data: [food, fuel, saving], backgroundColor: ["#ff6b6b","#4dabf7","#20c997"] }]
-        },
-        plugins: [ChartDataLabels],
-        options: { plugins: { datalabels: { color: "#fff", formatter: (v, ctx) => v > 0 ? v.toLocaleString() : "" } } }
-    });
-}
-
-function drawMonthlyChart(income, expense) {
-    const net = income - expense;
-
-    if (window.monthlyChartObj) window.monthlyChartObj.destroy();
-
-    window.monthlyChartObj = new Chart(
-        document.getElementById("monthlyChart"),
-        {
-            type: "bar",
-            data: {
-                labels: ["เงินเข้า", "เงินออก", "สุทธิ"],
-                datasets: [{
-                    data: [income, expense, net],
-                    backgroundColor: [
-                        "#20c997", // สีเขียว
-                        "#ff6b6b", // สีแดง
-                        "#4dabf7"  // สีฟ้า
-                    ]
-                }]
-            },
-            // --- ส่วนที่เพิ่มเพื่อแสดงตัวเลขบนกราฟ ---
-            plugins: [ChartDataLabels], 
-            options: {
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        anchor: 'end',    // วางตำแหน่งจุดยึดที่ปลายแท่ง
-                        align: 'top',     // ให้ตัวเลขอยู่ด้านบนของจุดยึด
-                        color: '#495057', // สีตัวอักษร
-                        font: {
-                            weight: 'bold',
-                            size: 14
-                        },
-                        formatter: function(value) {
-                            return value.toLocaleString(); // แสดงคอมม่าคั่นหลักพัน
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: v => v.toLocaleString()
-                        },
-                        // เพิ่ม padding ด้านบนเพื่อให้มีที่ว่างโชว์ตัวเลข
-                        grace: '15%' 
-                    }
-                },
-                // ป้องกันกราฟตัดตัวเลขด้านบน
-                layout: {
-                    padding: {
-                        top: 20
-                    }
-                }
-            }
-            // ------------------------------------
-        }
-    );
-}
-
-// Gold functions
-async function loadGold(){
-    try {
-        const goldRes = await fetch("https://api.gold-api.com/price/XAU");
-        const goldData = await goldRes.json();
-        const fxRes = await fetch("https://open.er-api.com/v6/latest/USD");
-        const fxData = await fxRes.json();
-        const goldPriceBaht = (goldData.price * fxData.rates.THB) * (15.244 / 31.1035);
-        document.getElementById("goldPrice").innerText = "ราคาทองประมาณ: " + Math.round(goldPriceBaht).toLocaleString() + " บาท";
-        return goldPriceBaht;
-    } catch(e) { document.getElementById("goldPrice").innerText = "โหลดข้อมูลทองไม่สำเร็จ"; }
-}
-
-async function loadMyGold(){
-    const price = await loadGold();
-    const tbody = document.getElementById("myGoldTable");
-    tbody.innerHTML = "";
-    myGold.forEach(g => {
-        const current = g.weight * price;
-        const profit = current - g.buy;
-        tbody.innerHTML += `<tr><td>${g.name}</td><td>${g.weight}</td><td>${g.buy.toLocaleString()}</td><td>${Math.round(current).toLocaleString()}</td><td style="color:${profit>=0?'green':'red'}">${profit>=0?'+':''}${Math.round(profit).toLocaleString()}</td></tr>`;
-    });
-}
-
-async function generateGoldTable(){
-    const tbody = document.querySelector("#goldTable tbody");
-    tbody.innerHTML = "<tr><td colspan='3'>กำลังจำลองข้อมูล...</td></tr>";
-    const basePrice = await loadGold();
-    tbody.innerHTML = "";
-    for(let i=2; i>=0; i--){
-        const d = new Date(); d.setMonth(d.getMonth()-i);
-        const change = Math.floor(Math.random()*400-200);
-        tbody.innerHTML += `<tr><td>${d.toLocaleString("th-TH",{month:"long"})}</td><td>${Math.round(basePrice + (i*100)).toLocaleString()}</td><td style="color:${change>=0?'green':'red'}">${change>=0?'+':''}${change}</td></tr>`;
-    }
-}
-
-async function drawGoldChart(){
-    const base = await loadGold();
-    const labels = [], prices = [];
-    for(let i=11; i>=0; i--){
-        const d = new Date(); d.setMonth(d.getMonth()-i);
-        labels.push(d.toLocaleString("th-TH",{month:"short"}));
-        prices.push(Math.round(base - (i*200) + Math.random()*500));
-    }
-    if(goldChart) goldChart.destroy();
-    goldChart = new Chart(document.getElementById("goldChart"), {
-        type: "line",
-        data: { labels: labels, datasets: [{ label: "ราคาทอง (บาท)", data: prices, borderColor: "#f59f00", fill: true, tension: 0.3 }] }
-    });
-}
-
-// System functions
-function showLoading(){ document.getElementById("loadingOverlay").style.display="flex"; }
-function hideLoading(){ document.getElementById("loadingOverlay").style.display="none"; }
-function toggleHistory(){ const el=document.getElementById("history"); el.style.display = el.style.display==="none" ? "block" : "none"; }
-
-async function save(){
-    const type=document.getElementById("type").value;
-    const category=document.getElementById("category").value;
-    const amount=document.getElementById("amount").value;
-    const note=document.getElementById("note").value;
-    if(!amount) return alert("กรุณากรอกจำนวนเงิน");
-    
-    showLoading();
-    try {
-        await fetch(API, {
-            method: "POST",
-            body: JSON.stringify({ type, category, amount, note, date: new Date().toISOString().split("T")[0] })
-        });
-        alert("บันทึกเรียบร้อย");
-        location.reload();
-    } catch(e) { alert("เกิดข้อผิดพลาด"); hideLoading(); }
-}
-
-function changePage(){
-    const page=document.getElementById("pageSelect").value;
-    ["homePage", "summaryPage", "goldPage", "mygoldPage"].forEach(p => document.getElementById(p).style.display="none");
-    document.getElementById(page+"Page").style.display="block";
-    if(page==="gold") { generateGoldTable(); drawGoldChart(); loadGold(); }
-    if(page==="mygold") loadMyGold();
-}
-
-// Start
-load();
-loadGold();
-</script>
-
-</body>
-</html>
+        const d = new D
