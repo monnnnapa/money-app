@@ -209,9 +209,14 @@ async function load(){
             if (tMonthStr === selectedMonth) {
                 if (t.type === "income") {
                     income += amount;
-                    foodRemain += amount * 0.1667;
-                    fuelRemain += amount * 0.2778;
-                    savingRemain += amount * 0.5556;
+
+                    const food = amount * 0.1667;
+                    const fuel = amount * 0.2778;
+                    const saving = amount - food - fuel;
+
+                    foodRemain += food;
+                    fuelRemain += fuel;
+                    savingRemain += saving;
                 } else {
                     expense += amount;
                     if (t.category === "food") { foodRemain -= amount; expFood += amount; }
@@ -272,15 +277,43 @@ function drawExpenseChart(food, fuel, saving){
 }
 
 function drawSavingChart(food, fuel, saving){
+
+    food = Number(food);
+    fuel = Number(fuel);
+    saving = Number(saving);
+
+    console.log("food =", food);
+    console.log("fuel =", fuel);
+    console.log("saving =", saving);
+
+    const total = food + fuel + saving;
+
+    console.log("รวมจริง =", total);
+    console.log("ส่วนต่างจาก 7200 =", total - 7200);
+
     if(savingChart) savingChart.destroy();
+
     savingChart = new Chart(document.getElementById("savingChart"), {
         type: "pie",
         data: {
             labels: ["วัตถุดิบ", "น้ำมัน", "เงินเก็บ"],
-            datasets: [{ data: [food, fuel, saving], backgroundColor: ["#ff6b6b","#4dabf7","#20c997"] }]
+            datasets: [{
+                data: [food, fuel, saving],
+                backgroundColor: ["#ff6b6b","#4dabf7","#20c997"]
+            }]
         },
         plugins: [ChartDataLabels],
-        options: { plugins: { datalabels: { color: "#fff", formatter: (v, ctx) => v > 0 ? v.toLocaleString() : "" } } }
+        options: {
+            plugins: {
+                datalabels: {
+                    color: "#fff",
+                    formatter: (v) =>
+                        v > 0 ? Number(v).toLocaleString("en-US", {
+                            maximumFractionDigits: 0
+                        }) : ""
+                }
+            }
+        }
     });
 }
 
